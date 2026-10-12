@@ -1,0 +1,33 @@
+
+# Python virtual environment
+.venv/
+venv/
+
+# Python cache
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+
+# Hospital datasets
+data/*.csv
+data/*.zip
+
+# Trained model files
+models/*.pkl
+models/*.joblib
+models/*.cbm
+models/*.json
+
+# CatBoost training logs
+catboost_info/
+
+# IDE settings
+.vscode/
+
+# Temporary files
+.ipynb_checkpoints/
