@@ -1,0 +1,26 @@
+{
+    "model": "Tuned CatBoost",
+    "dataset": "held_out_patient_group_test",
+    "test_encounters": 14913,
+    "threshold": 0.14,
+    "metrics": {
+        "accuracy": 0.7539730436531885,
+        "precision": 0.2064233576642336,
+        "recall": 0.4264173703256936,
+        "f1_score": 0.2781821758803856,
+        "roc_auc": 0.6760516890774312,
+        "pr_auc": 0.2354420353749232,
+        "brier_score": 0.0934680278942377,
+        "log_loss": 0.3269413724613635
+    },
+    "confusion_matrix": [
+        [
+            10537,
+            2718
+        ],
+        [
+            951,
+            707
+        ]
+    ]
+}

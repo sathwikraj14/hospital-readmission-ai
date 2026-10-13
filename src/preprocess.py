@@ -1,7 +1,15 @@
 
+import numpy as np
 import pandas as pd
 from pathlib import Path
+
 from sklearn.model_selection import GroupShuffleSplit
+from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.impute import SimpleImputer
+
+from feature_engineering import create_features
 
 
 # ==================================================
@@ -17,15 +25,12 @@ df = pd.read_csv(data_path)
 print("Cleaned dataset loaded successfully!")
 print("Dataset shape:", df.shape)
 
-print("\nFirst 5 records:")
-print(df.head())
-
 
 # ==================================================
 # STEP 2: SEPARATE FEATURES AND TARGET
 # ==================================================
 
-y = df["readmitted_30_days"]
+y = df["readmitted_30_days"].copy()
 
 columns_to_exclude = [
     "encounter_id",
@@ -34,23 +39,26 @@ columns_to_exclude = [
     "readmitted_30_days"
 ]
 
-X = df.drop(columns=columns_to_exclude)
+# Apply our three engineered features
+X = create_features(
+    df.drop(columns=columns_to_exclude)
+)
 
-# Keep patient IDs separately for group splitting
+# Keep patient IDs for group-based splitting
 patient_groups = df["patient_nbr"]
 
-print("\nFeature and target separation complete!")
+print("\nFeature engineering applied successfully!")
 print("Feature matrix shape:", X.shape)
 print("Target shape:", y.shape)
-print("Unique patient groups:", patient_groups.nunique())
-print("Target values:", sorted(y.unique()))
+print("Unique patients:", patient_groups.nunique())
+
+assert X.shape[1] == 48
 
 
 # ==================================================
 # STEP 3: TRAIN / VALIDATION / TEST SPLIT
 # ==================================================
 
-# First split: 70% training, 30% temporary
 splitter1 = GroupShuffleSplit(
     n_splits=1,
     test_size=0.30,
@@ -61,7 +69,6 @@ train_idx, temp_idx = next(
     splitter1.split(X, y, groups=patient_groups)
 )
 
-# Second split: temporary data into validation/test
 splitter2 = GroupShuffleSplit(
     n_splits=1,
     test_size=0.50,
@@ -84,7 +91,6 @@ test_idx = temp_idx[test_relative_idx]
 # STEP 4: CREATE INDEPENDENT DATASETS
 # ==================================================
 
-# .copy() prevents SettingWithCopyWarning
 X_train = X.iloc[train_idx].copy()
 X_val = X.iloc[val_idx].copy()
 X_test = X.iloc[test_idx].copy()
@@ -111,11 +117,11 @@ assert train_patients.isdisjoint(val_patients)
 assert train_patients.isdisjoint(test_patients)
 assert val_patients.isdisjoint(test_patients)
 
-print("Patient overlap check: PASSED")
+print("\nPatient overlap check: PASSED")
 
 
 # ==================================================
-# STEP 6: CHECK READMISSION PERCENTAGES
+# STEP 6: CHECK READMISSION DISTRIBUTIONS
 # ==================================================
 
 print("\nReadmission percentages:")
@@ -132,7 +138,6 @@ categorical_features = X_train.select_dtypes(
     include=["object", "str", "category"]
 ).columns.tolist()
 
-# Numeric IDs that represent categories
 coded_categories = [
     "admission_type_id",
     "discharge_disposition_id",
@@ -154,9 +159,6 @@ print("Categorical features:", len(categorical_features))
 
 print("\nNumerical feature names:")
 print(numerical_features)
-
-print("\nCategorical feature names:")
-print(categorical_features)
 
 assert (
     len(numerical_features) + len(categorical_features)
@@ -207,38 +209,14 @@ print("Testing:", (X_test == "?").sum().sum())
 
 
 # ==================================================
-# STEP 9: FINAL VERIFICATION
+# STEP 9: BUILD ML PREPROCESSING PIPELINE
 # ==================================================
 
-print("\n====================================")
-print("PREPROCESSING CHECKS COMPLETED")
-print("====================================")
-
-print("Training shape:", X_train.shape)
-print("Validation shape:", X_val.shape)
-print("Testing shape:", X_test.shape)
-
-print("Numerical features:", len(numerical_features))
-print("Categorical features:", len(categorical_features))
-
-print("\nReady to build the ML preprocessing pipeline!")
-
-from sklearn.compose import ColumnTransformer
-from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import OneHotEncoder, StandardScaler
-from sklearn.impute import SimpleImputer
-
-# ==================================================
-# STEP 10: BUILD ML PREPROCESSING PIPELINE
-# ==================================================
-
-# Numerical preprocessing
 numerical_pipeline = Pipeline(steps=[
     ("imputer", SimpleImputer(strategy="median")),
     ("scaler", StandardScaler())
 ])
 
-# Categorical preprocessing
 categorical_pipeline = Pipeline(steps=[
     (
         "encoder",
@@ -249,7 +227,6 @@ categorical_pipeline = Pipeline(steps=[
     )
 ])
 
-# Combine numerical and categorical preprocessing
 preprocessor = ColumnTransformer(
     transformers=[
         ("num", numerical_pipeline, numerical_features),
@@ -257,12 +234,11 @@ preprocessor = ColumnTransformer(
     ]
 )
 
-print("\nML preprocessing pipeline created successfully!")
-print(preprocessor)
-import numpy as np
+print("\nML preprocessing pipeline created!")
+
 
 # ==================================================
-# STEP 11: FIT AND TEST PREPROCESSING
+# STEP 10: FIT AND VALIDATE PREPROCESSING
 # ==================================================
 
 print("\nFitting preprocessing on training data...")
@@ -270,14 +246,20 @@ print("\nFitting preprocessing on training data...")
 X_train_processed = preprocessor.fit_transform(X_train)
 
 print("Transforming validation data...")
+
 X_val_processed = preprocessor.transform(X_val)
 
 print("\nProcessed dataset shapes:")
 print("Training:", X_train_processed.shape)
 print("Validation:", X_val_processed.shape)
 
-# Check for missing and infinite values
+
+# ==================================================
+# STEP 11: CHECK INVALID VALUES
+# ==================================================
+
 def check_invalid_values(data, name):
+
     values = data.data if hasattr(data, "toarray") else data
 
     missing_count = np.isnan(values).sum()
@@ -292,5 +274,26 @@ def check_invalid_values(data, name):
 
 check_invalid_values(X_train_processed, "Training")
 check_invalid_values(X_val_processed, "Validation")
+
+
+# ==================================================
+# STEP 12: FINAL VERIFICATION
+# ==================================================
+
+print("\n====================================")
+print("FEATURE ENGINEERING + PREPROCESSING")
+print("====================================")
+
+print("Training shape:", X_train.shape)
+print("Validation shape:", X_val.shape)
+print("Testing shape:", X_test.shape)
+
+print("Numerical features:", len(numerical_features))
+print("Categorical features:", len(categorical_features))
+
+print("\nEngineered features:")
+print("1. total_previous_visits")
+print("2. frequent_inpatient")
+print("3. frequent_emergency")
 
 print("\nPreprocessing validation: PASSED!")

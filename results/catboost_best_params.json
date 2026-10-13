@@ -1,0 +1,13 @@
+{
+    "best_cv_pr_auc": 0.22851712368496344,
+    "n_trials": 10,
+    "n_folds": 3,
+    "best_params": {
+        "iterations": 300,
+        "depth": 8,
+        "learning_rate": 0.07259248719561363,
+        "l2_leaf_reg": 6.387926357773329,
+        "random_strength": 0.31203728088487304,
+        "use_balanced_weights": false
+    }
+}

@@ -1,0 +1,8 @@
+{
+    "best_f1_threshold": 0.14,
+    "validation_f1": 0.2957050551121247,
+    "validation_precision": 0.22089721749006247,
+    "validation_recall": 0.4471264367816092,
+    "validation_roc_auc": 0.6779737703086807,
+    "validation_pr_auc": 0.24117151598530034
+}

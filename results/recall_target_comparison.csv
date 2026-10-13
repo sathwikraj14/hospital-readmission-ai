@@ -1,0 +1,4 @@
+Setting,Threshold,Recall (%),Precision (%),Accuracy (%),Detected,Missed,False Alerts,Total Flagged,Alert Burden (%)
+Current setting,0.14,44.71,22.09,75.15,778,962,2744,3522,23.62
+70% Recall Target,0.096,70.69,16.88,55.97,1230,510,6055,7285,48.86
+80% Recall Target,0.081,80.0,15.05,44.98,1392,348,7856,9248,62.02
